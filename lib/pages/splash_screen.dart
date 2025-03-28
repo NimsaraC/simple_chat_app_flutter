@@ -1,14 +1,63 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_chat_app/pages/login_screen.dart';
+import 'package:simple_chat_app/pages/main_screen.dart';
 import 'package:simple_chat_app/utils/constants/colors.dart';
 
-class SplashScreen extends StatelessWidget {
-  const SplashScreen({super.key});
+class SplashScreen extends StatefulWidget {
+  SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  bool isLogged = false;
+
+  void isLoggedIn() async {
+    try {
+      var user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        setState(() {
+          isLogged = true;
+        });
+      } else {
+        setState(() {
+          isLogged = false;
+        });
+      }
+    } catch (e) {
+      print("Error check user");
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    isLoggedIn();
+  }
+
+  void checkUser() {
+    if (isLogged) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) {
+          return MainScreen();
+        },
+      ));
+    } else {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) {
+          return LoginScreen();
+        },
+      ));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
     double height = MediaQuery.of(context).size.height;
+
     return Scaffold(
       body: SafeArea(
         child: Container(
@@ -74,13 +123,7 @@ class SplashScreen extends StatelessWidget {
                     ),
                   ),
                   child: GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) {
-                          return LoginScreen();
-                        },
-                      ));
-                    },
+                    onTap: () => checkUser(),
                     child: Center(
                       child: Container(
                         width: 200,
