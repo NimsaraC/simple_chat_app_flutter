@@ -1,5 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:simple_chat_app/models/chat_model.dart';
+import 'package:simple_chat_app/services/database/chat_service.dart';
 import 'package:simple_chat_app/utils/constants/colors.dart';
+import 'package:simple_chat_app/widgets/chat_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -9,6 +13,33 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  List<ChatModel> chats = [];
+  List<ChatModel> filteredChats = [];
+  bool isLoading = true;
+
+  Future<void> getUserChats() async {
+    try {
+      List<ChatModel> userChats = await ChatService()
+          .getUserChats(userId: FirebaseAuth.instance.currentUser!.uid);
+      setState(() {
+        chats = userChats;
+        filteredChats = chats;
+      });
+    } catch (e) {
+      print("Error getting chats $e");
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getUserChats();
+  }
+
   @override
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
@@ -24,140 +55,61 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       body: SafeArea(
-        child: Container(
-          padding: EdgeInsets.only(top: 20, right: 20, left: 20),
-          width: width,
-          height: height,
-          color: primaryColor,
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Text(
-                    "Simple Chat",
-                    style: TextStyle(
-                      color: gray,
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Spacer(),
-                  IconButton(
-                    onPressed: () {},
-                    icon: Icon(
-                      Icons.search,
-                      color: gray,
-                      size: 30,
-                    ),
-                  ),
-                ],
-              ),
-              Divider(
-                color: gray,
-                thickness: 1,
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              Container(
-                padding: EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: primaryColor,
-                    boxShadow: [
-                      BoxShadow(
-                          blurRadius: 5,
-                          color: Colors.grey,
-                          offset: Offset(5, 5))
-                    ]),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        child: isLoading
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: gray,
+                ),
+              )
+            : Container(
+                padding: EdgeInsets.only(top: 20, right: 20, left: 20),
+                width: width,
+                height: height,
+                color: primaryColor,
+                child: Column(
                   children: [
-                    SizedBox(
-                      height: 69,
-                      width: 69,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                          100,
-                        ),
-                        child: Image.asset(
-                          "assets/splash.png",
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 20,
-                    ),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "User Name",
-                            maxLines: 1,
-                            style: TextStyle(
-                              color: gray,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            "Message this is a test Message, and Last Message",
-                            style: TextStyle(
-                              color: gray.withOpacity(0.6),
-                              fontSize: 15,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(
-                      width: 20,
-                    ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
+                    Row(
                       children: [
                         Text(
-                          "5 min",
+                          "Simple Chat",
                           style: TextStyle(
-                            color: gray.withOpacity(0.5),
-                            fontSize: 15,
+                            color: gray,
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        Container(
-                          width: 35,
-                          height: 35,
-                          decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 55, 174, 230),
-                              borderRadius: BorderRadius.circular(10)),
-                          child: Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: Text(
-                                "1",
-                                style: TextStyle(
-                                  color: primaryColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
+                        Spacer(),
+                        IconButton(
+                          onPressed: () {},
+                          icon: Icon(
+                            Icons.search,
+                            color: gray,
+                            size: 30,
                           ),
-                        )
+                        ),
                       ],
+                    ),
+                    Divider(
+                      color: gray,
+                      thickness: 1,
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    SingleChildScrollView(
+                      child: ListView.builder(
+                        itemCount: filteredChats.length,
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemBuilder: (context, index) {
+                          final chat = filteredChats[index];
+                          return ChatCard(chatModel: chat);
+                        },
+                      ),
                     )
                   ],
                 ),
-              )
-            ],
-          ),
-        ),
+              ),
       ),
     );
   }

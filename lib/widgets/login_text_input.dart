@@ -7,13 +7,14 @@ class LoginTextInput extends StatelessWidget {
   final String? Function(String?)? validator;
   final bool isObscure;
   final TextEditingController controller;
+  final Function(String)? onChanged;
   const LoginTextInput({
     super.key,
     required this.hintText,
     this.type,
     this.validator,
     required this.isObscure,
-    required this.controller,
+    required this.controller,  this.onChanged,
   });
 
   @override
@@ -69,6 +70,7 @@ class LoginTextInput extends StatelessWidget {
             ),
           ),
         ),
+        onChanged: onChanged,
       ),
     );
   }

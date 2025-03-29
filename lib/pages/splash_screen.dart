@@ -5,7 +5,7 @@ import 'package:simple_chat_app/pages/main_screen.dart';
 import 'package:simple_chat_app/utils/constants/colors.dart';
 
 class SplashScreen extends StatefulWidget {
-  SplashScreen({super.key});
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();

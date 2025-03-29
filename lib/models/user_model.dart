@@ -1,11 +1,9 @@
-import 'dart:io';
 
 class UserModel {
   final String id;
   final String name;
   final String email;
   String imageUr;
-  File? image;
   List<String> friends = [];
   List<String> groups = [];
   List<String> messages = [];
@@ -15,7 +13,6 @@ class UserModel {
     required this.name,
     required this.email,
     this.imageUr = '',
-    this.image,
     this.friends = const [],
     this.groups = const [],
     this.messages = const [],
@@ -26,7 +23,6 @@ class UserModel {
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       email: json['email'] ?? '',
-      image: json['image'] ?? '',
       imageUr: json['imageUr'] ?? '',
       friends: List<String>.from(json['friends'] ?? []),
       groups: List<String>.from(json['groups'] ?? []),
@@ -39,7 +35,6 @@ class UserModel {
       'id': id,
       'name': name,
       'email': email,
-      'image': image,
       'imageUr': imageUr,
       'friends': friends,
       'groups': groups,
