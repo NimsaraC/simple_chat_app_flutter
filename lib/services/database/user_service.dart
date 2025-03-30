@@ -74,18 +74,18 @@ class UserService {
       UserModel friend = UserModel.fromJson(
           snapshot.docs.first.data() as Map<String, dynamic>);
 
-      List<String> friend_friends = [];
-      List<String> user_friends = [];
+      List<String> friendFriends = [];
+      List<String> userFriends = [];
 
-      friend_friends = friend.friends;
-      user_friends = currentUser.friends;
+      friendFriends = friend.friends;
+      userFriends = currentUser.friends;
 
       if (isAdd) {
-        friend_friends.add(currentUser.id);
-        user_friends.add(friend.id);
+        friendFriends.add(currentUser.id);
+        userFriends.add(friend.id);
       } else {
-        friend_friends.remove(currentUser.id);
-        user_friends.remove(friend.id);
+        friendFriends.remove(currentUser.id);
+        userFriends.remove(friend.id);
       }
 
       await editUser(userId: friend.id, newUser: friend);

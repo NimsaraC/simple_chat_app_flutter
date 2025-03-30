@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_chat_app/models/chat_model.dart';
 import 'package:simple_chat_app/models/user_model.dart';
+import 'package:simple_chat_app/pages/chat_screen.dart';
 import 'package:simple_chat_app/services/database/user_service.dart';
 import 'package:simple_chat_app/utils/constants/colors.dart';
 
@@ -59,7 +60,11 @@ class _ChatCardState extends State<ChatCard> {
                       blurRadius: 5, color: Colors.grey, offset: Offset(5, 5))
                 ]),
             child: GestureDetector(
-              onTap: () {},
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(chat: chat),
+                  )),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
