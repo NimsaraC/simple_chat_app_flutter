@@ -25,6 +25,8 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
   Future<void> getAllUsers() async {
     try {
       List<UserModel> users = await userService.getAllUsers();
+      users.removeWhere(
+          (user) => user.id == FirebaseAuth.instance.currentUser!.uid);
       setState(() {
         allUsers = users;
         filteredUsers = [];

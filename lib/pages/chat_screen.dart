@@ -1,8 +1,11 @@
 // ChatScreen.dart
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_chat_app/models/chat_model.dart';
 import 'package:simple_chat_app/models/message_model.dart';
+import 'package:simple_chat_app/models/user_model.dart';
 import 'package:simple_chat_app/services/database/message_service.dart';
+import 'package:simple_chat_app/services/database/user_service.dart';
 import 'package:simple_chat_app/utils/constants/colors.dart';
 import 'package:simple_chat_app/widgets/message_container.dart';
 
@@ -18,11 +21,23 @@ class _ChatScreenState extends State<ChatScreen> {
   final messageController = TextEditingController();
   final messageService = MessageService();
   ScrollController _scrollController = ScrollController();
+  String username = "";
 
   @override
   void initState() {
     super.initState();
+    getSecondUser();
     _scrollController = ScrollController();
+  }
+
+  Future<void> getSecondUser() async {
+    String currentUserId = FirebaseAuth.instance.currentUser!.uid;
+    String targetUserId = widget.chat.UserOneId == currentUserId
+        ? widget.chat.UserTwoId
+        : widget.chat.UserOneId;
+
+    UserModel? user = await UserService().getUserById(targetUserId);
+    setState(() => username = user!.name);
   }
 
   @override
@@ -30,6 +45,71 @@ class _ChatScreenState extends State<ChatScreen> {
     messageController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _showDeleteDialog(MessageModel message) async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        backgroundColor: primaryColor,
+        title: const Text(
+          'Delete message',
+          style: TextStyle(
+            color: gray,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this message? This action cannot be undone.',
+          style: TextStyle(
+            color: gray,
+            fontSize: 16,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                color: gray,
+                fontSize: 16,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () async {
+              await messageService.deleteMessage(
+                  messageId: message.id, chatId: message.chatId);
+              Navigator.pop(context);
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Chat deleted successfully'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+              }
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> sendMessage() async {
@@ -79,7 +159,7 @@ class _ChatScreenState extends State<ChatScreen> {
             SizedBox(width: 20),
             Expanded(
               child: Text(
-                "Username",
+                username,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -132,7 +212,10 @@ class _ChatScreenState extends State<ChatScreen> {
                       reverse: true, // Show newest messages at bottom
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
-                        return MessageContainer(message: messages[index]);
+                        return GestureDetector(
+                            onLongPress: () =>
+                                _showDeleteDialog(messages[index]),
+                            child: MessageContainer(message: messages[index]));
                       },
                     );
                   },

@@ -19,18 +19,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> getUserChats() async {
     try {
-      List<ChatModel> userChats = await ChatService()
-          .getUserChats(userId: FirebaseAuth.instance.currentUser!.uid);
-      setState(() {
-        chats = userChats;
-        filteredChats = chats;
-      });
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      List<ChatModel> userChats =
+          await ChatService().getUserChats(userId: userId);
+      if (mounted) {
+        setState(() {
+          chats = userChats;
+          filteredChats = chats;
+          isLoading = false;
+        });
+      }
     } catch (e) {
-      print("Error getting chats $e");
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+      print("Error getting chats: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading chats: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
@@ -40,20 +57,87 @@ class _HomeScreenState extends State<HomeScreen> {
     getUserChats();
   }
 
+  Future<void> _showDeleteDialog(String chatId) async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        backgroundColor: primaryColor,
+        title: const Text(
+          'Delete Chat',
+          style: TextStyle(
+            color: gray,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this chat? This action cannot be undone.',
+          style: TextStyle(
+            color: gray,
+            fontSize: 16,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                color: gray,
+                fontSize: 16,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () async {
+              try {
+                await ChatService().deleteChat(chatId);
+                await getUserChats();
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Chat deleted successfully'),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error deleting chat: $e'),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    double height = MediaQuery.of(context).size.height;
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: green,
-        child: Icon(
-          Icons.add,
-          color: gray,
-          size: 40,
-        ),
-      ),
       body: SafeArea(
         child: isLoading
             ? Center(
@@ -62,9 +146,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )
             : Container(
-                padding: EdgeInsets.only(top: 20, right: 20, left: 20),
-                width: width,
-                height: height,
+                padding: const EdgeInsets.only(top: 20, right: 20, left: 20),
+                width: size.width,
+                height: size.height,
                 color: primaryColor,
                 child: Column(
                   children: [
@@ -78,39 +162,45 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Spacer(),
-                        IconButton(
-                          onPressed: () {},
-                          icon: Icon(
-                            Icons.search,
-                            color: gray,
-                            size: 30,
-                          ),
-                        ),
                       ],
                     ),
                     Divider(
                       color: gray,
                       thickness: 1,
                     ),
-                    SizedBox(
-                      height: 20,
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: filteredChats.isEmpty
+                          ? Center(
+                              child: Text(
+                                "No chats available",
+                                style: TextStyle(
+                                  color: gray,
+                                  fontSize: 20,
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: filteredChats.length,
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemBuilder: (context, index) {
+                                final chat = filteredChats[index];
+                                return GestureDetector(
+                                  onLongPress: () => _showDeleteDialog(chat.id),
+                                  child: ChatCard(chatModel: chat),
+                                );
+                              },
+                            ),
                     ),
-                    SingleChildScrollView(
-                      child: ListView.builder(
-                        itemCount: filteredChats.length,
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          final chat = filteredChats[index];
-                          return ChatCard(chatModel: chat);
-                        },
-                      ),
-                    )
                   ],
                 ),
               ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 }

@@ -92,4 +92,25 @@ class ChatService {
       throw Exception("Failed to fetch or create chat");
     }
   }
+
+  Future<void> deleteChat(String chatId) async {
+    try {
+      await chatReference.doc(chatId).delete();
+      
+      final messageReference = FirebaseFirestore.instance.collection('messages');
+      final messagesSnapshot = await messageReference
+          .where('chatId', isEqualTo: chatId)
+          .get();
+      
+      for (var doc in messagesSnapshot.docs) {
+        await doc.reference.delete();
+      }
+      
+      print("Chat and associated messages deleted successfully");
+    } catch (e) {
+      print("Error deleting chat: $e");
+      throw Exception("Failed to delete chat");
+    }
+  }
+  
 }

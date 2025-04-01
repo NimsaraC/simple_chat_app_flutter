@@ -49,4 +49,48 @@ class MessageService {
       }).toList();
     });
   }
+
+  Future<void> deleteMessage({
+    required String messageId,
+    required String chatId,
+  }) async {
+    try {
+      final messageDoc = await messageReference.doc(messageId).get();
+      if (!messageDoc.exists) {
+        throw Exception("Message not found");
+      }
+
+      // final messageData = messageDoc.data() as Map<String, dynamic>;
+      // final messageContent = messageData['content'];
+
+      await messageReference.doc(messageId).delete();
+
+      await chatReference.doc(chatId).update({
+        'messages': FieldValue.arrayRemove([messageId]),
+      });
+
+      final remainingMessages = await messageReference
+          .where('chatId', isEqualTo: chatId)
+          .orderBy('timestamp', descending: true)
+          .limit(1)
+          .get();
+
+      if (remainingMessages.docs.isNotEmpty) {
+        final latestMessage =
+            remainingMessages.docs.first.data() as Map<String, dynamic>;
+        await chatReference.doc(chatId).update({
+          'lastMessage': latestMessage['content'],
+        });
+      } else {
+        await chatReference.doc(chatId).update({
+          'lastMessage': null,
+        });
+      }
+
+      print("Message deleted successfully");
+    } catch (e) {
+      print("Error deleting message: $e");
+      throw Exception("Failed to delete message");
+    }
+  }
 }
